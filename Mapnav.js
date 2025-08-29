@@ -3,8 +3,8 @@
 
 // Configuration
 const disable_complexity_checks = false; // Set to true to show intersection markers and branch arrows
-const map_x = 11;
-const map_y = 12;
+const map_x = 16;
+const map_y = 16;
 
 // Player logic for tank controls
 const player = {
