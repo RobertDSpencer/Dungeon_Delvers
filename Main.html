@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Game with Top-Down Display</title>
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; }
+        canvas { border: 1px solid black; }
+        #controls { margin-top: 20px; }
+        button { margin: 5px; }
+    </style>
+</head>
+<body>
+    <canvas id="mazeCanvas" width="400" height="400"></canvas>
+    <div id="controls">
+        <button id="newMazeButton">New Maze</button>
+    </div>
+    <div id="status"></div>
+
+    <script src="Mapgen.js"></script>
+    <script src="Maze.js"></script>
+    <script src="Player.js"></script>
+    <script src="Mapnav.js"></script>
+</body>
+</html>
