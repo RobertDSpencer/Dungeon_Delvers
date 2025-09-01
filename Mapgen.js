@@ -2,7 +2,7 @@
 // Contains maze generation algorithms
 
 // default size of mazes
-const default_size = 5
+const default_size = 16
 // Helper to pick a weighted random position
 function pickPosition(width, height) {
     const rand = Math.random();
@@ -28,6 +28,19 @@ function pickPosition(width, height) {
         // Truly random
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
+                positions.push({ x, y });
+            }
+        }
+    }
+    return positions[Math.floor(Math.random() * positions.length)];
+}
+
+// Helper to pick a different position from a given point
+function pickDifferentPosition(width, height, exclude) {
+    let positions = [];
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (x !== exclude.x || y !== exclude.y) {
                 positions.push({ x, y });
             }
         }
@@ -89,12 +102,9 @@ function generateBacktrackingMaze(width = default_size, height = default_size) {
         }
     }
 
-    // Set start and end
+    // Set start and end, ensuring they are different
     const start = pickPosition(width, height);
-    let end = pickPosition(width, height);
-    while (start.x === end.x && start.y === end.y) {
-        end = pickPosition(width, height);
-    }
+    const end = pickDifferentPosition(width, height, start);
 
     return { width, height, cells, start, end };
 }
@@ -160,12 +170,9 @@ function generatePrimsMaze(width = default_size, height = default_size) {
         }
     }
 
-    // Set start and end
+    // Set start and end, ensuring they are different
     const start = pickPosition(width, height);
-    let end = pickPosition(width, height);
-    while (start.x === end.x && start.y === end.y) {
-        end = pickPosition(width, height);
-    }
+    const end = pickDifferentPosition(width, height, start);
 
     return { width, height, cells, start, end };
 }

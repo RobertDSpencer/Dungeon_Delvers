@@ -3,8 +3,8 @@
 
 // Configuration
 const disable_complexity_checks = false; // Set to true to show intersection markers and branch arrows
-const map_x = 16;
-const map_y = 16;
+const map_x = 6;
+const map_y = 6;
 
 // Player logic for tank controls
 const player = {
@@ -18,6 +18,83 @@ let pathLength = 0; // Store path length to exit
 let intersections = []; // Store {x, y, number} for each intersection
 let branchArrows = []; // Store {x, y, isValid, direction} for branch arrows of all intersections
 let checkedCells = []; // Store {x, y, direction} for cells checked in isValidPath
+
+// Determines relative complexity based on maze size, path length, and intersection count
+function getComplexityLabels(width, height, pathLength, intersectionsCount) {
+    const sizeKey = `${width}x${height}`;
+    const thresholds = {
+        '6x6': {
+            pathLength: [
+                { max: 5, label: 'very short' },    // <= 20th percentile
+                { max: 7, label: 'short' },        // <= 40th percentile
+                { max: 10, label: 'average' },     // <= 60th percentile
+                { max: 13, label: 'long' },        // <= 80th percentile
+                { max: 36, label: 'very long' }    // <= 100th percentile
+            ],
+            intersections: [
+                { max: 1, label: 'simple' },  // <= 20th percentile
+                { max: 2, label: 'average' },      // <= 60th percentile
+                { max: 3, label: 'complex' },      // <= 80th percentile
+                { max: 9, label: 'very complex' }  // <= 100th percentile
+            ]
+        },
+        '11x11': {
+            pathLength: [
+                { max: 10, label: 'very short' },  // <= 20th percentile
+                { max: 15, label: 'short' },       // <= 40th percentile
+                { max: 21, label: 'average' },     // <= 60th percentile
+                { max: 32, label: 'long' },        // <= 80th percentile
+                { max: 104, label: 'very long' }   // <= 100th percentile
+            ],
+            intersections: [
+                { max: 2, label: 'very simple' },  // <= 20th percentile
+                { max: 3, label: 'simple' },       // <= 40th percentile
+                { max: 5, label: 'average' },      // <= 60th percentile
+                { max: 6, label: 'complex' },      // <= 80th percentile
+                { max: 19, label: 'very complex' } // <= 100th percentile
+            ]
+        },
+        '16x16': {
+            pathLength: [
+                { max: 16, label: 'very short' },  // <= 20th percentile
+                { max: 24, label: 'short' },       // <= 40th percentile
+                { max: 33, label: 'average' },     // <= 60th percentile
+                { max: 59, label: 'long' },        // <= 80th percentile
+                { max: 204, label: 'very long' }   // <= 100th percentile
+            ],
+            intersections: [
+                { max: 3, label: 'very simple' },  // <= 20th percentile
+                { max: 5, label: 'simple' },       // <= 40th percentile
+                { max: 7, label: 'average' },      // <= 60th percentile
+                { max: 10, label: 'complex' },     // <= 80th percentile
+                { max: 28, label: 'very complex' } // <= 100th percentile
+            ]
+        }
+    };
+
+    // Default to 11x11 if size is not recognized
+    const mazeThresholds = thresholds[sizeKey] || thresholds['11x11'];
+
+    // Find path length label
+    let pathLabel = 'very long';
+    for (const threshold of mazeThresholds.pathLength) {
+        if (pathLength <= threshold.max) {
+            pathLabel = threshold.label;
+            break;
+        }
+    }
+
+    // Find intersection count label
+    let intersectionLabel = 'very complex';
+    for (const threshold of mazeThresholds.intersections) {
+        if (intersectionsCount <= threshold.max) {
+            intersectionLabel = threshold.label;
+            break;
+        }
+    }
+
+    return { pathLabel, intersectionLabel };
+}
 
 function loadGameMaze(maze) {
     if (!maze) {
@@ -253,13 +330,14 @@ function updateStatus() {
     const status = document.getElementById('status');
     let msg = `Position: (${player.position.x}, ${player.position.y}) Facing: ${player.facing}`;
     if (isAtEnd()) {
-        msg += ' - You reached the end!';
+        msg += '<br>You reached the end!';
     }
     status.innerHTML = msg;
 
-    // Update complexity text
+    // Update complexity text with descriptive labels
     const complexity = document.getElementById('complexity');
-    complexity.innerHTML = `Complexity<br>Intersections to exit: ${intersectionsCount}<br>Path length to exit: ${pathLength}`;
+    const { pathLabel, intersectionLabel } = getComplexityLabels(currentMaze.width, currentMaze.height, pathLength, intersectionsCount);
+    complexity.innerHTML = `Complexity<br>Path length: ${pathLabel}<br>Intersections: ${intersectionLabel}`;
 }
 
 // Initialize new maze button and keyboard controls
