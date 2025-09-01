@@ -1,24 +1,22 @@
 // Mapnav.js
 // Handles player controls and rendering for the maze game
+console.log('Mapnav.js loaded');
 
 // Configuration
 const disable_complexity_checks = false; // Set to true to show intersection markers and branch arrows
 const map_x = 6;
 const map_y = 6;
-
 // Player logic for tank controls
 const player = {
     position: { x: 0, y: 0 },
     facing: 'east' // Initial facing
 };
-
 let currentMaze = null;
 let intersectionsCount = 0;
 let pathLength = 0; // Store path length to exit
 let intersections = []; // Store {x, y, number} for each intersection
 let branchArrows = []; // Store {x, y, isValid, direction} for branch arrows of all intersections
 let checkedCells = []; // Store {x, y, direction} for cells checked in isValidPath
-
 // Determines relative complexity based on maze size, path length, and intersection count
 function getComplexityLabels(width, height, pathLength, intersectionsCount) {
     const sizeKey = `${width}x${height}`;
@@ -71,10 +69,8 @@ function getComplexityLabels(width, height, pathLength, intersectionsCount) {
             ]
         }
     };
-
     // Default to 11x11 if size is not recognized
     const mazeThresholds = thresholds[sizeKey] || thresholds['11x11'];
-
     // Find path length label
     let pathLabel = 'very long';
     for (const threshold of mazeThresholds.pathLength) {
@@ -83,7 +79,6 @@ function getComplexityLabels(width, height, pathLength, intersectionsCount) {
             break;
         }
     }
-
     // Find intersection count label
     let intersectionLabel = 'very complex';
     for (const threshold of mazeThresholds.intersections) {
@@ -92,17 +87,15 @@ function getComplexityLabels(width, height, pathLength, intersectionsCount) {
             break;
         }
     }
-
     return { pathLabel, intersectionLabel };
 }
-
-function loadGameMaze(maze) {
+function loadGameMaze(maze, customPosition = null, customFacing = null) {
     if (!maze) {
         console.error('Error: No maze provided to loadGameMaze');
         return;
     }
-    player.position = { ...maze.start };
-    player.facing = 'east'; // Reset facing
+    player.position = customPosition ? { ...customPosition } : { ...maze.start };
+    player.facing = customFacing || 'east'; // Default to east if not specified
     currentMaze = maze;
     checkedCells = []; // Clear checked cells for new maze
     const intersectionData = countIntersectionsToExit(maze, checkedCells);
@@ -113,7 +106,6 @@ function loadGameMaze(maze) {
     drawMaze();
     updateStatus();
 }
-
 // Tank controls helper functions
 function turn(dir) {
     const facings = ['north', 'east', 'south', 'west'];
@@ -127,7 +119,6 @@ function turn(dir) {
     drawMaze();
     updateStatus();
 }
-
 function moveInDirection(direction) {
     if (!currentMaze) {
         console.error('Error: No maze loaded in moveInDirection');
@@ -135,10 +126,8 @@ function moveInDirection(direction) {
     }
     const { x, y } = player.position;
     const cell = currentMaze.cells[y][x];
-
     let newX = x;
     let newY = y;
-
     switch (direction) {
         case 'north':
             if (cell.north) return;
@@ -157,26 +146,21 @@ function moveInDirection(direction) {
             newX--;
             break;
     }
-
     // Check bounds
     if (newX < 0 || newX >= currentMaze.width || newY < 0 || newY >= currentMaze.height) {
         return;
     }
-
     player.position = { x: newX, y: newY };
     drawMaze();
     updateStatus();
 }
-
 function moveForward() {
     moveInDirection(player.facing);
 }
-
 function moveBackward() {
     const opposites = { north: 'south', south: 'north', east: 'west', west: 'east' };
     moveInDirection(opposites[player.facing]);
 }
-
 function isAtEnd() {
     if (!currentMaze) {
         console.error('Error: No maze loaded in isAtEnd');
@@ -184,26 +168,28 @@ function isAtEnd() {
     }
     return player.position.x === currentMaze.end.x && player.position.y === currentMaze.end.y;
 }
-
 // Drawing functions
-const canvas = document.getElementById('mazeCanvas');
-const ctx = canvas.getContext('2d');
+let mazeCanvas = document.getElementById('mazeCanvas');
+const ctx = mazeCanvas ? mazeCanvas.getContext('2d') : null;
+if (!ctx) {
+    console.error('Failed to get 2D context for mazeCanvas');
+}
 const cellSize = 25; // Adjusted for map size
-
 function drawMaze() {
     if (!currentMaze) {
         console.error('Error: No maze to draw');
         return;
     }
-
+    if (!ctx) {
+        console.error('Error: No canvas context for mazeCanvas');
+        return;
+    }
     const { width, height, cells } = currentMaze;
-    canvas.width = width * cellSize;
-    canvas.height = height * cellSize;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    mazeCanvas.width = width * cellSize;
+    mazeCanvas.height = height * cellSize;
+    ctx.clearRect(0, 0, mazeCanvas.width, mazeCanvas.height);
     ctx.strokeStyle = 'black';
     ctx.lineWidth = 2;
-
     // Define angles for arrow rotations
     const angles = {
         north: 0,
@@ -211,14 +197,12 @@ function drawMaze() {
         south: Math.PI,
         west: 3 * Math.PI / 2
     };
-
     // Draw walls
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const cell = cells[y][x];
             const px = x * cellSize;
             const py = y * cellSize;
-
             if (cell.north) {
                 ctx.beginPath();
                 ctx.moveTo(px, py);
@@ -245,7 +229,6 @@ function drawMaze() {
             }
         }
     }
-
     // Draw intersections and branch arrows only if disable_complexity_checks is true
     if (disable_complexity_checks) {
         // Draw intersections as light blue circles with numbers
@@ -263,7 +246,6 @@ function drawMaze() {
             ctx.fillText(number, cx, cy);
             ctx.fillStyle = 'lightblue'; // Reset for next circle
         });
-
         // Draw branch arrows (green for valid, red for invalid)
         const arrowSize = cellSize / 3; // Smaller than player arrow
         branchArrows.forEach(({ x, y, isValid, direction }) => {
@@ -281,7 +263,6 @@ function drawMaze() {
             ctx.fill();
             ctx.restore();
         });
-
         // Draw checked cells as yellow arrows
         const checkedArrowSize = cellSize / 4; // Smaller than branch arrows
         checkedCells.forEach(({ x, y, direction }) => {
@@ -300,7 +281,6 @@ function drawMaze() {
             ctx.restore();
         });
     }
-
     // Draw player as red arrow (rotated based on facing)
     const px = player.position.x * cellSize + cellSize / 2;
     const py = player.position.y * cellSize + cellSize / 2;
@@ -316,7 +296,6 @@ function drawMaze() {
     ctx.closePath();
     ctx.fill();
     ctx.restore();
-
     // Draw end point as green circle
     const ex = currentMaze.end.x * cellSize + cellSize / 2;
     const ey = currentMaze.end.y * cellSize + cellSize / 2;
@@ -325,31 +304,33 @@ function drawMaze() {
     ctx.arc(ex, ey, playerArrowSize / 2, 0, 2 * Math.PI);
     ctx.fill();
 }
-
 function updateStatus() {
     const status = document.getElementById('status');
-    let msg = `Position: (${player.position.x}, ${player.position.y}) Facing: ${player.facing}`;
-    if (isAtEnd()) {
-        msg += '<br>You reached the end!';
-    }
-    status.innerHTML = msg;
-
-    // Update complexity text with descriptive labels
     const complexity = document.getElementById('complexity');
-    const { pathLabel, intersectionLabel } = getComplexityLabels(currentMaze.width, currentMaze.height, pathLength, intersectionsCount);
-    complexity.innerHTML = `Complexity<br>Path length: ${pathLabel}<br>Intersections: ${intersectionLabel}`;
+    if (status) {
+        let msg = `Position: (${player.position.x}, ${player.position.y}) Facing: ${player.facing}`;
+        if (isAtEnd()) {
+            msg += '<br>You reached the end!';
+        }
+        status.innerHTML = msg;
+    } else {
+        console.warn('Status element not found, skipping status update');
+    }
+    if (complexity) {
+        const { pathLabel, intersectionLabel } = getComplexityLabels(currentMaze.width, currentMaze.height, pathLength, intersectionsCount);
+        complexity.innerHTML = `Complexity<br>Path length: ${pathLabel}<br>Intersections: ${intersectionLabel}`;
+    } else {
+        console.warn('Complexity element not found, skipping complexity update');
+    }
 }
-
 // Initialize new maze button and keyboard controls
 document.addEventListener('DOMContentLoaded', () => {
     const maze = generateRandomMaze('gameMaze', map_x, map_y);
     loadGameMaze(maze);
-
-    document.getElementById('newMazeButton').addEventListener('click', () => {
+    document.getElementById('newViewButton').addEventListener('click', () => {
         const maze = generateRandomMaze('gameMaze', map_x, map_y);
         loadGameMaze(maze);
     });
-
     document.addEventListener('keydown', (event) => {
         switch (event.key.toLowerCase()) {
             case 'w':

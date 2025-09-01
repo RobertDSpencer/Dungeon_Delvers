@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First-Person and Top-Down Maze View</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        #newViewButton {
+            margin: 10px 0;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #newViewButton:hover {
+            background-color: #45a049;
+        }
+        #mazeCanvas, #firstPersonCanvas {
+            margin: 10px 0;
+            border: 1px solid black;
+        }
+        #status, #complexity {
+            margin: 10px 0;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="firstPersonCanvas"></canvas>
+    <canvas id="mazeCanvas"></canvas>
+    <button id="newViewButton">New Maze View</button>
+    <div id="status"></div>
+    <div id="complexity"></div>
+    <script src="Mapgen.js"></script>
+    <script src="Maze.js"></script>
+    <script src="Player.js"></script>
+    <script src="ComplexityCheck.js"></script>
+    <script src="Mapnav.js"></script>
+    <script src="FPV.js"></script>
+    <script>
+        console.log('FPVTester.html script started');
+        // Initialize maze and both views on load
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                console.log('Starting initialization...');
+                // Generate initial maze (6x6 to match Mapnav.js default)
+                console.log('Generating initial maze...');
+                if (typeof generateRandomMaze !== 'function') {
+                    throw new Error('generateRandomMaze is not defined');
+                }
+                generateRandomMaze('gameMaze', 6, 6);
+                const maze = getMaze('gameMaze');
+                if (!maze) {
+                    throw new Error('Failed to generate or retrieve maze');
+                }
+                console.log('Maze generated:', maze);
+                // Draw first-person view
+                console.log('Drawing first-person view...');
+                if (typeof drawFirstPersonView !== 'function') {
+                    throw new Error('drawFirstPersonView is not defined');
+                }
+                drawFirstPersonView('gameMaze');
+                // Update Mapnav.js player position and facing to match FPV.js
+                if (!cameraPosition || !cameraFacing) {
+                    throw new Error('Camera position or facing not set in FPV.js');
+                }
+                if (typeof player === 'undefined') {
+                    throw new Error('player object is not defined');
+                }
+                player.position = { ...cameraPosition };
+                player.facing = cameraFacing;
+                console.log('Setting top-down view with position:', player.position, 'facing:', player.facing);
+                // Set maze and draw top-down view directly
+                currentMaze = maze;
+                drawMaze();
+                // Update status and complexity
+                updateStatus();
+                // Add event listener for new maze button
+                const button = document.getElementById('newViewButton');
+                if (!button) {
+                    throw new Error('newViewButton not found');
+                }
+                button.addEventListener('click', () => {
+                    console.log('Generating new maze...');
+                    generateRandomMaze('gameMaze', 6, 6);
+                    const newMaze = getMaze('gameMaze');
+                    if (!newMaze) {
+                        throw new Error('Failed to generate or retrieve new maze');
+                    }
+                    console.log('New maze generated:', newMaze);
+                    drawFirstPersonView('gameMaze');
+                    player.position = { ...cameraPosition };
+                    player.facing = cameraFacing;
+                    console.log('Updating top-down view with position:', player.position, 'facing:', player.facing);
+                    currentMaze = newMaze;
+                    drawMaze();
+                    updateStatus();
+                });
+            } catch (error) {
+                console.error('Initialization error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
