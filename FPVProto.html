@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First-Person Wall Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        #centerWallCanvas {
+            border: 1px solid black;
+            width: 800px; /* Match canvas size */
+            height: 600px;
+        }
+        #errorMessage {
+            color: red;
+            font-size: 16px;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="centerWallCanvas"></canvas>
+    <div id="errorMessage">Failed to load the canvas. Check the console for errors.</div>
+    <script>
+        console.log('FPVProto.html script started');
+        // Load FPVProto.js and draw wall
+        const script = document.createElement('script');
+        script.src = 'FPVProto.js';
+        script.onload = () => {
+            console.log('FPVProto.js script loaded successfully');
+            if (typeof drawCenterWall === 'function') {
+                drawCenterWall();
+            } else {
+                console.error('drawCenterWall is not defined');
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        };
+        script.onerror = () => {
+            console.error('Failed to load FPVProto.js');
+            document.getElementById('errorMessage').style.display = 'block';
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
