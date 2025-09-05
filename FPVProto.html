@@ -33,15 +33,16 @@
     <div id="errorMessage">Failed to load the canvas. Check the console for errors.</div>
     <script>
         console.log('FPVProto.html script started');
-        // Load FPVProto.js and draw wall
+        // Load FPVProto.js and start cycling far walls
         const script = document.createElement('script');
         script.src = 'FPVProto.js';
         script.onload = () => {
             console.log('FPVProto.js script loaded successfully');
-            if (typeof drawCenterWall === 'function') {
-                drawCenterWall();
+            if (typeof cycleFarWalls === 'function') {
+                cycleFarWalls();
+                setInterval(cycleFarWalls, 1500); // Refresh every 1.5 seconds
             } else {
-                console.error('drawCenterWall is not defined');
+                console.error('cycleFarWalls is not defined');
                 document.getElementById('errorMessage').style.display = 'block';
             }
         };

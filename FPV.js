@@ -55,10 +55,10 @@ function drawFirstPersonView(mazeName) {
     // Clear canvas
     ctx.clearRect(0, 0, firstPersonCanvas.width, firstPersonCanvas.height);
 
-    // Draw background (simple floor and ceiling)
-    ctx.fillStyle = 'black'; // Floor
+    // Draw background (floor and ceiling)
+    ctx.fillStyle = 'darkgray'; // Floor
     ctx.fillRect(0, firstPersonCanvas.height / 2, firstPersonCanvas.width, firstPersonCanvas.height / 2);
-    ctx.fillStyle = 'blue'; // Ceiling
+    ctx.fillStyle = 'lightgray'; // Ceiling
     ctx.fillRect(0, 0, firstPersonCanvas.width, firstPersonCanvas.height / 2);
 
     // Perspective projection parameters
@@ -67,6 +67,7 @@ function drawFirstPersonView(mazeName) {
     const wallHeights = [canvasHeight * 0.8, canvasHeight * 0.5, canvasHeight * 0.3]; // Heights for 1, 2, 3 tiles away
     const wallWidths = [canvasWidth * 0.8, canvasWidth * 0.5, canvasWidth * 0.3]; // Widths for 1, 2, 3 tiles away
     const offsets = [canvasWidth * 0.1, canvasWidth * 0.25, canvasWidth * 0.35]; // X offsets for centering
+    const sideWallWidths = [canvasWidth * 0.2, canvasWidth * 0.125, canvasWidth * 0.075]; // Narrower for side walls
 
     // Check cells up to 3 tiles ahead in the facing direction
     let currentPos = { x: cameraPosition.x, y: cameraPosition.y };
@@ -77,27 +78,47 @@ function drawFirstPersonView(mazeName) {
         // Get next cell in facing direction
         let nextPos;
         let wallProp;
+        let leftWallProp, rightWallProp;
         switch (cameraFacing) {
             case 'north':
                 nextPos = { x: currentPos.x, y: currentPos.y - 1 };
                 wallProp = 'north';
+                leftWallProp = 'west';
+                rightWallProp = 'east';
                 break;
             case 'south':
                 nextPos = { x: currentPos.x, y: currentPos.y + 1 };
                 wallProp = 'south';
+                leftWallProp = 'east';
+                rightWallProp = 'west';
                 break;
             case 'east':
                 nextPos = { x: currentPos.x + 1, y: currentPos.y };
                 wallProp = 'east';
+                leftWallProp = 'north';
+                rightWallProp = 'south';
                 break;
             case 'west':
                 nextPos = { x: currentPos.x - 1, y: currentPos.y };
                 wallProp = 'west';
+                leftWallProp = 'south';
+                rightWallProp = 'north';
                 break;
         }
 
-        // Check if next position is within bounds
+        // Check if next position is out of bounds (treat as a wall)
         if (nextPos.x < 0 || nextPos.x >= maze.width || nextPos.y < 0 || nextPos.y >= maze.height) {
+            // Draw wall at the border
+            const wallHeight = wallHeights[distance - 1];
+            const wallWidth = wallWidths[distance - 1];
+            const xOffset = offsets[distance - 1];
+            const yTop = (canvasHeight - wallHeight) / 2;
+            const yBottom = yTop + wallHeight;
+            ctx.fillStyle = 'gray';
+            ctx.fillRect(xOffset, yTop, wallWidth, wallHeight);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(xOffset, yTop, wallWidth, wallHeight);
             blocked = true;
             continue;
         }
@@ -108,10 +129,58 @@ function drawFirstPersonView(mazeName) {
             const wallHeight = wallHeights[distance - 1];
             const wallWidth = wallWidths[distance - 1];
             const xOffset = offsets[distance - 1];
+            const yTop = (canvasHeight - wallHeight) / 2;
+            const yBottom = yTop + wallHeight;
             ctx.fillStyle = 'gray';
-            ctx.fillRect(xOffset, (canvasHeight - wallHeight) / 2, wallWidth, wallHeight);
+            ctx.fillRect(xOffset, yTop, wallWidth, wallHeight);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(xOffset, yTop, wallWidth, wallHeight);
             blocked = true;
             continue;
+        }
+
+        // Draw side walls for the next cell (corridor ahead)
+        if (nextPos.x >= 0 && nextPos.x < maze.width && nextPos.y >= 0 && nextPos.y < maze.height) {
+            const wallHeight = wallHeights[distance - 1];
+            const sideWidth = sideWallWidths[distance - 1];
+            const innerHeight = wallHeight * (1 - distance * 0.1); // Smaller inner height for perspective
+            const yTop = (canvasHeight - wallHeight) / 2;
+            const yBottom = yTop + wallHeight;
+            const innerYTop = (canvasHeight - innerHeight) / 2;
+            const innerYBottom = innerYTop + innerHeight;
+
+            // Left wall
+            if (maze.cells[nextPos.y][nextPos.x][leftWallProp]) {
+                const xOffset = offsets[distance - 1] - sideWidth;
+                ctx.beginPath();
+                ctx.moveTo(xOffset, yTop); // outer top
+                ctx.lineTo(xOffset + sideWidth, innerYTop); // inner top
+                ctx.lineTo(xOffset + sideWidth, innerYBottom); // inner bottom
+                ctx.lineTo(xOffset, yBottom); // outer bottom
+                ctx.closePath();
+                ctx.fillStyle = 'gray';
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Right wall
+            if (maze.cells[nextPos.y][nextPos.x][rightWallProp]) {
+                const xOffset = offsets[distance - 1] + wallWidths[distance - 1];
+                ctx.beginPath();
+                ctx.moveTo(xOffset + sideWidth, yTop); // outer top
+                ctx.lineTo(xOffset, innerYTop); // inner top
+                ctx.lineTo(xOffset, innerYBottom); // inner bottom
+                ctx.lineTo(xOffset + sideWidth, yBottom); // outer bottom
+                ctx.closePath();
+                ctx.fillStyle = 'gray';
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
         }
 
         // Check if the end point is at the next position
